@@ -1,0 +1,12 @@
+{
+  "name": "Adl - عدل",
+  "description": "منصة المحكمة الإلكترونية المصغرة لحل النزاعات البسيطة بالصوت والشفافية في اليمن.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "Audio Recording",
+    "Digital Mediation",
+    "Smart Legal Tracking"
+  ]
+}

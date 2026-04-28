@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents a citizen, judge, or administrator in the Adl system.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "fullName": { "type": "string", "description": "Full legal name" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["citizen", "judge", "admin"] },
+        "reputationScore": { "type": "number", "description": "Trust score from 0-100" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "role"]
+    },
+    "Case": {
+      "title": "Legal Case",
+      "description": "A dispute filed by a plaintiff against a defendant.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["financial", "family", "property", "other"] },
+        "status": { "type": "string", "enum": ["pending", "review", "hearing_scheduled", "resolved", "dismissed"] },
+        "plaintiffId": { "type": "string", "description": "UID of the user filing the case" },
+        "defendantName": { "type": "string" },
+        "defendantId": { "type": "string", "description": "Optional UID if defendant is registered" },
+        "judgeId": { "type": "string", "description": "UID of the assigned judge" },
+        "audioUrl": { "type": "string", "description": "Link to the voice recording" },
+        "transcript": { "type": "string", "description": "AI-generated transcript" },
+        "aiSummary": { "type": "string", "description": "AI-generated summary" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "type", "status", "plaintiffId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public and private user profiles."
+    },
+    "/cases/{caseId}": {
+      "schema": "Case",
+      "description": "The main repository for disputes."
+    }
+  }
+}

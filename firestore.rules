@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ---------------------------------------------------------
+    // GLOBAL HELPERS
+    // ---------------------------------------------------------
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Identity check against a trusted 'admins' collection or specific UID
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---------------------------------------------------------
+    // SCHEMA VALIDATORS
+    // ---------------------------------------------------------
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'role']) &&
+             data.keys().size() <= 10 &&
+             data.uid == request.auth.uid &&
+             data.fullName is string && data.fullName.size() <= 100 &&
+             data.role in ['citizen', 'judge', 'admin'];
+    }
+
+    function isValidCase(data) {
+      return data.keys().hasAll(['title', 'type', 'status', 'plaintiffId', 'createdAt']) &&
+             data.keys().size() <= 15 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.type in ['financial', 'family', 'property', 'other'] &&
+             data.status in ['pending', 'review', 'hearing_scheduled', 'resolved', 'dismissed'] &&
+             data.plaintiffId == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    // ---------------------------------------------------------
+    // DEFAULT DENY
+    // ---------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // USER PROFILES
+    // ---------------------------------------------------------
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false; // Prevention of user scraping
+      
+      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming());
+      
+      allow update: if isSignedIn() && isOwner(userId) && 
+                      isValidUser(incoming()) &&
+                      incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'reputationScore']) &&
+                      incoming().role == existing().role; // Role is immutable by user
+    }
+
+    // ---------------------------------------------------------
+    // CASES
+    // ---------------------------------------------------------
+    match /cases/{caseId} {
+      allow get: if isSignedIn() && (
+        isOwner(existing().plaintiffId) || 
+        isOwner(existing().defendantId) || 
+        isOwner(existing().judgeId)
+      );
+      
+      allow list: if isSignedIn() && (
+        resource.data.plaintiffId == request.auth.uid || 
+        resource.data.defendantId == request.auth.uid ||
+        resource.data.judgeId == request.auth.uid
+      );
+
+      allow create: if isSignedIn() && isEmailVerified() && isValidCase(incoming());
+
+      allow update: if isSignedIn() && (
+        // Action: Self-Update (Plaintiff can only update basic info before review)
+        (isOwner(existing().plaintiffId) && existing().status == 'pending' && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'updatedAt']) &&
+         incoming().updatedAt == request.time) ||
+         
+        // Action: Admin/Judge state changes handled via specific triggers (Simplified for now)
+        isAdmin()
+      );
+      
+      allow delete: if false; // Legal records are permanent
+    }
+  }
+}

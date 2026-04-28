@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Noto Kufi Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", "Noto Kufi Arabic", sans-serif;
+  
+  --color-gold-50: #fefce8;
+  --color-gold-100: #fef9c3;
+  --color-gold-200: #fef08a;
+  --color-gold-300: #fde047;
+  --color-gold-400: #facc15;
+  --color-gold-500: #D4AF37;
+  --color-gold-600: #ca8a04;
+  --color-gold-700: #a16207;
+  --color-gold-800: #854d0e;
+  --color-gold-900: #713f12;
+  --color-gold-950: #422006;
+}
+
+@layer base {
+  html {
+    direction: rtl;
+    font-family: var(--font-sans);
+    @apply antialiased bg-[#050505] text-white selection:bg-gold-500/30;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl;
+}
+
+.gold-gradient {
+  @apply bg-gradient-to-br from-[#D4AF37] via-[#F9E27E] to-[#C5A028];
+}
